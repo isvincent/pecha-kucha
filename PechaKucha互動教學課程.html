@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PechaKucha Interactive Lesson 互動教學</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&family=Space+Mono:wght@400;700&display=swap');
+  :root{--ink:#0d0d0d;--paper:#f5f0e8;--accent:#e63329;--accent2:#f5a623;--accent3:#1a6b3c;--muted:#8a8178;--card-bg:#fffdf7;}
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'Noto Sans TC',sans-serif;background:var(--paper);color:var(--ink);min-height:100vh;overflow-x:hidden;}
+  body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");pointer-events:none;z-index:9999;}
+  header{padding:3rem 2rem 2rem;text-align:center;background:var(--ink);color:var(--paper);}
+  header .eyebrow{font-family:'Space Mono',monospace;font-size:.72rem;letter-spacing:.22em;color:var(--accent2);text-transform:uppercase;margin-bottom:.5rem;}
+  header h1{font-size:clamp(2.5rem,8vw,5rem);font-weight:900;line-height:1;letter-spacing:-.03em;}
+  header h1 span{color:var(--accent);display:inline-block;transform:rotate(-2deg);border-bottom:4px solid var(--accent2);}
+  header .subtitle{margin-top:.8rem;font-size:.88rem;color:#ccc;font-family:'Space Mono',monospace;line-height:1.9;}
+  .lesson-nav{display:flex;justify-content:center;gap:.5rem;padding:1.2rem 1rem;flex-wrap:wrap;background:var(--ink);border-bottom:3px solid var(--accent);}
+  .phase-pill{font-family:'Space Mono',monospace;font-size:.62rem;padding:.4rem 1rem;border:2px solid #444;border-radius:999px;color:#aaa;cursor:pointer;transition:all .2s;letter-spacing:.03em;text-align:center;line-height:1.6;}
+  .phase-pill:hover,.phase-pill.active{border-color:var(--accent);color:var(--accent);background:rgba(230,51,41,.1);}
+  main{max-width:1100px;margin:0 auto;padding:2rem 1.5rem 5rem;}
+  .phase{display:none;animation:fadeIn .4s ease;}
+  .phase.active{display:block;}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+  .phase-header{display:flex;align-items:baseline;gap:1rem;margin-bottom:2.5rem;padding-bottom:1rem;border-bottom:3px solid var(--ink);}
+  .phase-number{font-family:'Space Mono',monospace;font-size:4rem;font-weight:700;color:var(--accent);line-height:1;flex-shrink:0;}
+  .phase-title{font-size:clamp(1.05rem,3vw,1.7rem);font-weight:900;line-height:1.3;}
+  .phase-title .en{display:block;font-size:.62em;font-weight:400;color:var(--muted);font-family:'Space Mono',monospace;letter-spacing:.04em;margin-top:3px;}
+  .phase-meta{font-family:'Space Mono',monospace;font-size:.68rem;color:var(--muted);margin-top:.3rem;}
+  .activity-card{background:var(--card-bg);border:2.5px solid var(--ink);border-radius:4px;margin-bottom:2rem;overflow:hidden;box-shadow:4px 4px 0 var(--ink);transition:transform .15s,box-shadow .15s;}
+  .activity-card:hover{transform:translate(-2px,-2px);box-shadow:6px 6px 0 var(--ink);}
+  .card-header{display:flex;align-items:center;gap:1rem;padding:1rem 1.5rem;background:var(--ink);color:var(--paper);cursor:pointer;user-select:none;}
+  .act-num{font-family:'Space Mono',monospace;font-size:.68rem;background:var(--accent);color:#fff;padding:.2rem .5rem;border-radius:2px;flex-shrink:0;}
+  .card-header h3{font-size:.98rem;font-weight:700;flex:1;line-height:1.45;}
+  .card-header h3 .en-title{display:block;font-size:.73em;font-weight:400;color:#aaa;font-family:'Space Mono',monospace;}
+  .card-time{font-family:'Space Mono',monospace;font-size:.68rem;color:var(--accent2);flex-shrink:0;}
+  .chevron{font-size:1rem;transition:transform .3s;color:#aaa;}
+  .card-header.open .chevron{transform:rotate(180deg);}
+  .card-body{padding:0;max-height:0;overflow:hidden;transition:max-height .5s ease,padding .3s;}
+  .card-body.open{max-height:4000px;padding:1.5rem;}
+  /* teacher box */
+  .tbox{background:#1a1a2e;color:#e0d8cc;border-radius:6px;padding:1rem 1.2rem;margin-bottom:1.2rem;border-left:4px solid var(--accent2);font-size:.86rem;line-height:1.85;}
+  .tbox .tb-label{font-family:'Space Mono',monospace;font-size:.58rem;letter-spacing:.18em;color:var(--accent2);text-transform:uppercase;margin-bottom:.4rem;}
+  .tbox .zh{margin-bottom:.25rem;}
+  .tbox .en{color:#aaa;font-size:.82em;font-style:italic;}
+  /* student box */
+  .sbox{background:#fff8ee;border:2px solid var(--accent2);border-radius:6px;padding:1rem 1.2rem;margin-bottom:1.2rem;font-size:.88rem;line-height:1.85;}
+  .sbox .sb-label{font-family:'Space Mono',monospace;font-size:.58rem;letter-spacing:.18em;color:var(--accent2);text-transform:uppercase;margin-bottom:.4rem;font-weight:700;}
+  /* bili */
+  .bili{margin-bottom:.5rem;}
+  .bili .zh{font-weight:700;font-size:.93rem;}
+  .bili .en{color:var(--muted);font-size:.8rem;font-style:italic;display:block;margin-top:1px;}
+  /* steps */
+  .steps{list-style:none;}
+  .steps li{display:flex;gap:1rem;margin-bottom:1rem;align-items:flex-start;}
+  .step-icon{width:28px;height:28px;background:var(--ink);color:var(--paper);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Space Mono',monospace;font-size:.72rem;font-weight:700;flex-shrink:0;margin-top:2px;}
+  .step-text{font-size:.88rem;line-height:1.75;}
+  .step-text .en{color:var(--muted);font-style:italic;font-size:.83em;display:block;}
+  /* callout */
+  .callout{border-left:4px solid var(--accent);background:#fff3ee;padding:.9rem 1.2rem;margin:1rem 0;border-radius:0 4px 4px 0;font-size:.88rem;line-height:1.85;}
+  .callout.green{border-color:var(--accent3);background:#f0fff5;}
+  .callout.blue{border-color:#1a3d6b;background:#f0f4ff;}
+  .callout-label{font-family:'Space Mono',monospace;font-size:.58rem;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin-bottom:.4rem;}
+  /* conclusion banner */
+  .cbanner{background:var(--accent);color:#fff;padding:1rem 1.5rem;border-radius:6px;font-size:.93rem;font-weight:700;line-height:1.85;margin:1rem 0;border:3px solid var(--ink);box-shadow:4px 4px 0 var(--ink);}
+  .cbanner .en{font-size:.8em;font-weight:400;opacity:.85;display:block;margin-top:.2rem;font-style:italic;}
+  /* timer */
+  .timer-widget{border:3px solid var(--ink);border-radius:8px;padding:2rem;text-align:center;background:var(--ink);color:var(--paper);margin:1.5rem 0;}
+  .timer-display{font-family:'Space Mono',monospace;font-size:6rem;font-weight:700;color:var(--accent2);line-height:1;letter-spacing:-.05em;}
+  .timer-label{font-size:.78rem;color:#aaa;margin-bottom:1.2rem;font-family:'Space Mono',monospace;letter-spacing:.08em;line-height:1.7;}
+  .timer-bar{height:8px;background:#333;border-radius:4px;overflow:hidden;margin:1rem 0 1.5rem;}
+  .timer-bar-fill{height:100%;background:linear-gradient(90deg,var(--accent2),var(--accent));border-radius:4px;width:100%;transition:width 1s linear;}
+  /* buttons */
+  .btn{font-family:'Space Mono',monospace;font-size:.75rem;font-weight:700;padding:.55rem 1.3rem;border:2px solid var(--paper);border-radius:4px;cursor:pointer;letter-spacing:.05em;text-transform:uppercase;transition:all .15s;background:transparent;color:var(--paper);margin:.3rem;}
+  .btn:hover{background:var(--paper);color:var(--ink);}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;}
+  .btn.primary:hover{background:#c42820;border-color:#c42820;}
+  .btn.dark{border-color:var(--ink);color:var(--ink);}
+  .btn.dark:hover{background:var(--ink);color:var(--paper);}
+  /* hand */
+  .hand-game-area{background:#f0fff5;border:2px solid var(--accent3);border-radius:8px;padding:1.5rem;text-align:center;margin:1rem 0;}
+  .hand-icon{font-size:2.3rem;cursor:pointer;display:inline-block;transition:transform .2s;user-select:none;}
+  .hand-icon:hover{transform:translateY(-8px);}
+  .hand-icon.raised{transform:translateY(-16px) rotate(-10deg);}
+  .result-msg{font-family:'Space Mono',monospace;font-size:.78rem;margin-top:.8rem;min-height:2.5rem;color:var(--accent3);font-weight:700;line-height:1.7;}
+  /* topic card */
+  .topic-card{border:2px dashed var(--ink);border-radius:8px;padding:1rem;text-align:center;cursor:pointer;transition:all .2s;background:#fff;user-select:none;}
+  .topic-card:hover{background:var(--ink);color:var(--paper);}
+  .topic-card .topic-text{font-size:.95rem;font-weight:900;margin-bottom:.15rem;}
+  .topic-card .topic-en{font-size:.68rem;font-style:italic;color:var(--muted);margin-bottom:.15rem;}
+  .topic-card:hover .topic-en{color:#bbb;}
+  .topic-card .topic-hint{font-family:'Space Mono',monospace;font-size:.58rem;color:var(--muted);}
+  .topic-card:hover .topic-hint{color:#aaa;}
+  /* grids */
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:1rem;}
+  .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;}
+  @media(max-width:600px){.grid-2,.grid-3{grid-template-columns:1fr;}}
+  /* rhythm */
+  .rhythm-strip{display:flex;gap:4px;margin:1.2rem 0;align-items:flex-end;height:80px;}
+  .beat{flex:1;border-radius:4px 4px 0 0;transition:height .3s;cursor:pointer;position:relative;}
+  .beat:hover::after{content:attr(data-label);position:absolute;bottom:105%;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--paper);font-size:.52rem;font-family:'Space Mono',monospace;padding:3px 6px;border-radius:3px;white-space:nowrap;z-index:10;}
+  /* slide mock */
+  .slide-mock{border:3px solid var(--ink);border-radius:8px;overflow:hidden;aspect-ratio:16/9;position:relative;background:#1a1a2e;display:flex;align-items:center;justify-content:center;margin:1rem 0;cursor:pointer;}
+  .slide-text-block{font-size:clamp(.5rem,1.2vw,.75rem);color:#ccc;padding:1.5rem;line-height:1.9;width:100%;}
+  .slide-progress{position:absolute;bottom:0;left:0;right:0;height:4px;background:rgba(255,255,255,.1);}
+  .slide-progress-fill{height:100%;background:var(--accent);transition:width 1s linear;}
+  /* text practice */
+  .text-practice{font-size:1rem;line-height:2.3;background:#fff;border:2px solid var(--ink);padding:1.2rem;border-radius:6px;cursor:pointer;user-select:none;}
+  .word{display:inline-block;padding:0 2px;border-radius:3px;cursor:pointer;transition:all .15s;}
+  .word.emphasized{background:var(--accent2);font-weight:900;transform:scale(1.15);color:var(--ink);}
+  .word.adj{background:rgba(230,51,41,.12);}
+  .word.verb{background:rgba(26,107,60,.12);}
+  /* pk stage */
+  .pk-stage{background:var(--ink);border-radius:8px;padding:2rem;margin:1rem 0;text-align:center;color:var(--paper);}
+  .pk-slide-num{font-family:'Space Mono',monospace;font-size:2.8rem;font-weight:700;color:var(--accent2);}
+  .pk-timer{font-family:'Space Mono',monospace;font-size:2.5rem;margin:.3rem 0;font-weight:700;}
+  .pk-slide-dots{display:flex;gap:8px;justify-content:center;margin-top:1rem;}
+  .pk-dot{width:16px;height:16px;border-radius:50%;border:2px solid #555;transition:all .3s;}
+  .pk-dot.done{background:var(--accent3);border-color:var(--accent3);}
+  .pk-dot.active{background:var(--accent2);border-color:var(--accent2);transform:scale(1.3);}
+  /* score */
+  .score-row{display:flex;gap:.5rem;align-items:center;margin-bottom:.6rem;}
+  .score-name{font-family:'Space Mono',monospace;font-size:.68rem;width:115px;flex-shrink:0;line-height:1.5;}
+  .score-bar{flex:1;height:24px;background:#eee;border:2px solid var(--ink);border-radius:3px;overflow:hidden;}
+  .score-fill{height:100%;background:var(--accent2);transition:width .6s cubic-bezier(.34,1.56,.64,1);display:flex;align-items:center;justify-content:flex-end;padding-right:6px;font-size:.7rem;font-weight:700;}
+  .score-val{font-family:'Space Mono',monospace;font-size:.78rem;width:36px;text-align:right;}
+  /* beat display */
+  #beatDisplay{font-size:1.6rem;font-weight:900;background:var(--ink);color:var(--paper);padding:1rem 2rem;border-radius:8px;display:inline-block;min-width:180px;margin-bottom:1rem;transition:background .3s;text-align:center;line-height:1.5;}
+  /* table */
+  table.rt{width:100%;border-collapse:collapse;margin:1rem 0;}
+  table.rt th,table.rt td{padding:.6rem .9rem;border:2px solid var(--ink);font-size:.83rem;line-height:1.55;}
+  table.rt th{background:var(--ink);color:var(--paper);font-family:'Space Mono',monospace;font-size:.65rem;letter-spacing:.08em;}
+  table.rt .ec{font-size:.76em;color:var(--muted);display:block;font-style:italic;}
+  table.rt tr:nth-child(even){background:#fdf6ee;}
+  /* progress */
+  .progress-tracker{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--ink);color:var(--paper);border-radius:999px;padding:.5rem 1rem;font-family:'Space Mono',monospace;font-size:.68rem;display:flex;align-items:center;gap:.5rem;z-index:100;border:2px solid var(--accent2);box-shadow:0 4px 20px rgba(0,0,0,.3);line-height:1.5;}
+  .progress-tracker span{color:var(--accent2);font-weight:700;}
+  hr.div{border:none;border-top:2px dashed #ddd;margin:1.2rem 0;}
+  .tag{display:inline-block;font-family:'Space Mono',monospace;font-size:.6rem;padding:2px 8px;border:1.5px solid;border-radius:999px;margin:2px;letter-spacing:.05em;text-transform:uppercase;}
+  .tag-red{border-color:var(--accent);color:var(--accent);}
+  .tag-green{border-color:var(--accent3);color:var(--accent3);}
+  .kw-input{border:none;border-bottom:2px solid var(--ink);width:100%;font-size:1rem;font-weight:700;text-align:center;padding:.5rem;background:transparent;outline:none;}
+  .kw-input::placeholder{font-weight:400;color:#bbb;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="eyebrow">Interactive Lesson · 互動教學 · 4 Phases · 100 min</div>
+  <h1>Pecha<span>Kucha</span></h1>
+  <div class="subtitle">
+    20 seconds × 20 slides × Tell Your Story<br>
+    20 秒 × 20 張投影片 × 說你的故事
+  </div>
+</header>
+
+<nav class="lesson-nav">
+  <button class="phase-pill active" onclick="switchPhase(0)">① Shock &amp; Rules<br>震撼教育 15'</button>
+  <button class="phase-pill" onclick="switchPhase(1)">② Show, Don't Tell<br>感官擴寫 25'</button>
+  <button class="phase-pill" onclick="switchPhase(2)">③ Rhythm &amp; Pause<br>口語節奏 25'</button>
+  <button class="phase-pill" onclick="switchPhase(3)">④ Lightning Talk<br>閃電發表 35'</button>
+</nav>
+
+<main>
+
+<!-- ====== PHASE 1 ====== -->
+<section class="phase active" id="phase-0">
+  <div class="phase-header">
+    <div class="phase-number">01</div>
+    <div>
+      <div class="phase-title">震撼教育與規則拆解
+        <span class="en">Shock Education &amp; Rule Breakdown</span>
+      </div>
+      <div class="phase-meta">⏱ 15 min · 2 activities 個活動</div>
+    </div>
+  </div>
+
+  <!-- ACT 1 -->
+  <div class="activity-card">
+    <div class="card-header open" onclick="toggleCard(this)">
+      <span class="act-num">ACT 1</span>
+      <h3>🎭 老師的 60 秒騙局<span class="en-title">The Teacher's 60-Second Deception</span></h3>
+      <span class="card-time">5 min</span><span class="chevron">▼</span>
+    </div>
+    <div class="card-body open">
+      <div class="tbox">
+        <div class="tb-label">🎙 Teacher Instruction 教師指令</div>
+        <div class="zh">準備 3 張全是文字的投影片。<strong>背對學生</strong>、用平板聲音唸稿。唸完後，問學生下方問題。</div>
+        <div class="en">Prepare 3 text-heavy slides. <strong>Stand with your back to students</strong> and read in a flat, monotone voice. When done, ask the question below.</div>
+      </div>
+      <div class="sbox">
+        <div class="sb-label">💬 Teacher Asks 老師問學生</div>
+        <div class="bili">
+          <span class="zh">「請問，剛才第 2 張投影片的第 3 行寫什麼？」</span>
+          <span class="en">"What was written on line 3 of the second slide?"</span>
+        </div>
+        <div style="margin-top:.6rem;font-style:italic;font-size:.82rem;color:var(--muted);">（通常沒有人記得 / Usually nobody remembers.）</div>
+      </div>
+      <div style="margin:1.2rem 0;">
+        <div style="font-family:'Space Mono',monospace;font-size:.65rem;color:var(--muted);margin-bottom:6px;">▶ 點擊螢幕體驗模擬 / Click the screen to simulate</div>
+        <div class="slide-mock" id="badSlide" onclick="startBadDemo()">
+          <div class="slide-text-block" id="slideContent">點擊開始模擬 / Click to begin simulation →<br><br>（模擬老師唸稿的投影片 / Simulates reading from a text-heavy slide）</div>
+          <div class="slide-progress"><div class="slide-progress-fill" id="slideProgressFill" style="width:0%"></div></div>
+        </div>
+        <div id="slideQuestion" style="display:none;background:#fff3cd;border:2px solid var(--accent2);padding:1rem;border-radius:6px;margin-top:8px;font-weight:700;text-align:center;line-height:1.9;">
+          ❓ 你還記得第 2 張第 3 行寫什麼嗎？<br><span style="font-size:.82em;font-weight:400;font-style:italic;color:var(--muted);">Do you remember what was on line 3 of slide 2?</span>
+        </div>
+      </div>
+      <div class="cbanner">
+        💡 結論：觀眾是用「聽」的，不是用「讀」的！這就是為什麼我們需要 PechaKucha。
+        <span class="en">Conclusion: The audience listens — they don't read. That's exactly why we need PechaKucha!</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ACT 2 -->
+  <div class="activity-card">
+    <div class="card-header open" onclick="toggleCard(this)">
+      <span class="act-num">ACT 2</span>
+      <h3>⏱ 20 秒體感遊戲<span class="en-title">The 20-Second Sense Game</span></h3>
+      <span class="card-time">10 min</span><span class="chevron">▼</span>
+    </div>
+    <div class="card-body open">
+      <div class="tbox">
+        <div class="tb-label">🎙 Teacher Instruction 教師指令</div>
+        <div class="zh">請全班閉上眼睛。按下計時器。同學覺得 20 秒到了，就舉手。記錄誰的時間感最準確。</div>
+        <div class="en">Ask the class to close their eyes. Press start. Students raise their hand when they think 20 seconds are up. See who has the best sense of time.</div>
+      </div>
+      <div class="timer-widget">
+        <div class="timer-label">閉上眼睛，覺得 20 秒到了就舉手 ✋<br>Close your eyes — raise your hand when you think 20 seconds are up!</div>
+        <div class="timer-display" id="timerDisplay">20</div>
+        <div class="timer-bar"><div class="timer-bar-fill" id="timerBarFill"></div></div>
+        <div id="timerInstruction" style="color:#aaa;font-size:.78rem;margin-bottom:1rem;line-height:1.7;">老師點擊開始 / Teacher clicks to start</div>
+        <button class="btn primary" onclick="startTimer()">▶ 開始 Start</button>
+        <button class="btn" onclick="resetTimer()">↺ 重置 Reset</button>
+      </div>
+      <div class="hand-game-area">
+        <div style="font-weight:700;margin-bottom:.8rem;font-size:.93rem;">
+          🙋 你覺得 20 秒到了嗎？點選你舉手的時機！<br><span style="font-size:.8em;font-weight:400;font-style:italic;color:var(--muted);">When did you think 20 seconds passed? Tap the moment you raised your hand!</span>
+        </div>
+        <div style="display:flex;gap:1.2rem;justify-content:center;flex-wrap:wrap;">
+          <div style="text-align:center;cursor:pointer;" onclick="raiseHand(this,5)"><div class="hand-icon">✋</div><div style="font-family:'Space Mono',monospace;font-size:.62rem;">5 sec / 5秒</div></div>
+          <div style="text-align:center;cursor:pointer;" onclick="raiseHand(this,10)"><div class="hand-icon">✋</div><div style="font-family:'Space Mono',monospace;font-size:.62rem;">10 sec / 10秒</div></div>
+          <div style="text-align:center;cursor:pointer;" onclick="raiseHand(this,15)"><div class="hand-icon">✋</div><div style="font-family:'Space Mono',monospace;font-size:.62rem;">15 sec / 15秒</div></div>
+          <div style="text-align:center;cursor:pointer;" onclick="raiseHand(this,20)"><div class="hand-icon">✋</div><div style="font-family:'Space Mono',monospace;font-size:.62rem;">20 sec ✓ / 20秒</div></div>
+          <div style="text-align:center;cursor:pointer;" onclick="raiseHand(this,25)"><div class="hand-icon">✋</div><div style="font-family:'Space Mono',monospace;font-size:.62rem;">25 sec / 25秒</div></div>
+        </div>
+        <div class="result-msg" id="handResult"></div>
+      </div>
+      <div class="callout green">
+        <div class="callout-label">📌 口訣 Key Formula</div>
+        <div class="bili"><span class="zh">20 秒 ≈ <strong>80–100 個中文字</strong>，約 <strong>3–4 句話</strong></span><span class="en">20 seconds ≈ <strong>40–50 English words</strong>, about <strong>3–4 sentences</strong></span></div>
+      </div>
+      <table class="rt">
+        <tr><th>時間 / Time</th><th>中文字 / Chinese</th><th>英文字 / English</th><th>句數 / Sentences</th></tr>
+        <tr><td>5 sec 秒</td><td>~20 字</td><td>~10 words</td><td>1 句</td></tr>
+        <tr><td>10 sec 秒</td><td>~40 字</td><td>~20 words</td><td>1–2 句</td></tr>
+        <tr><td><strong>20 sec 秒 ✅</strong></td><td><strong>80–100 字</strong></td><td><strong>40–50 words</strong></td><td><strong>3–4 句</strong></td></tr>
+        <tr><td>30 sec 秒</td><td>~120 字</td><td>~60 words</td><td>5+ 句（超時 Over!）</td></tr>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ====== PHASE 2 ====== -->
+<section class="phase" id="phase-1">
+  <div class="phase-header">
+    <div class="phase-number">02</div>
+    <div>
+      <div class="phase-title">Show, Don't Tell 落地練習<span class="en">Show, Don't Tell — Hands-On Practice</span></div>
+      <div class="phase-meta">⏱ 25 min · 2 activities 個活動</div>
+    </div>
+  </div>
+
+  <!-- ACT 3 -->
+  <div class="activity-card">
+    <div class="card-header open" onclick="toggleCard(this)">
+      <span class="act-num">ACT 3</span>
+      <h3>🚫 禁忌詞挑戰：感官擴寫<span class="en-title">Taboo Word Challenge: Sensory Expansion</span></h3>
+      <span class="card-time">15 min</span><span class="chevron">▼</span>
+    </div>
+    <div class="card-body open">
+      <div class="tbox">
+        <div class="tb-label">🎙 Teacher Instruction 教師指令</div>
+        <div class="zh">將全班分為 7 組，每組 5 人。每組點擊下方抽取一張主題卡。任務：<strong>不能說出主題詞</strong>，改用視覺、聽覺、觸覺描述，讓全班猜出是什麼。</div>
+        <div class="en">Divide into 7 groups of 5. Each group clicks a topic card below. Task: <strong>You cannot say the topic word</strong> — describe it using sight, sound, and touch so the class can guess.</div>
+      </div>
+      <div class="sbox">
+        <div class="sb-label">📋 你的任務 Your Task</div>
+        <div class="bili">
+          <span class="zh">用感官描述你的主題，但絕對不能說出那個詞！讓同學猜。</span>
+          <span class="en">Describe your topic using your senses — but NEVER say the topic word. Can your classmates guess it?</span>
+        </div>
+      </div>
+      <div style="margin:1.5rem 0;">
+        <div style="font-family:'Space Mono',monospace;font-size:.65rem;color:var(--muted);margin-bottom:.8rem;">▼ 各組點擊抽取主題 / Each group clicks to draw a topic</div>
+        <div class="grid-3" id="topicGrid">
+          <div class="topic-card" onclick="drawTopic(this,0)"><div class="topic-text">？</div><div class="topic-en">Group 1 · 第一組</div><div class="topic-hint">點擊抽取 / Click to draw</div></div>
+          <div class="topic-card" onclick="drawTopic(this,1)"><div class="topic-text">？</div><div class="topic-en">Group 2 · 第二組</div><div class="topic-hint">點擊抽取 / Click to draw</div></div>
+          <div class="topic-card" onclick="drawTopic(this,2)"><div class="topic-text">？</div><div class="topic-en">Group 3 · 第三組</div><div class="topic-hint">點擊抽取 / Click to draw</div></div>
+          <div class="topic-card" onclick="drawTopic(this,3)"><div class="topic-text">？</div><div class="topic-en">Group 4 · 第四組</div><div class="topic-hint">點擊抽取 / Click to draw</div></div>
+          <div class="topic-card" onclick="drawTopic(this,4)"><div class="topic-text">？</div><div class="topic-en">Group 5 · 第五組</div><div class="topic-hint">點擊抽取 / Click to draw</div></div>
+          <div class="topic-card" onclick="drawTopic(this,5)"><div class="topic-text">？</div><div class="topic-en">Group 6 · 第六組</div><div class="topic-hint">點擊抽取 / Click to draw</div></div>
+          <div class="topic-card" onclick="drawTopic(this,6)"><div class="topic-text">？</div><div class="topic-en">Group 7 · 第七組</div><div class="topic-hint">點擊抽取 / Click to draw</div></div>
+        </div>
+        <button class="btn dark" style="margin-top:1rem;" onclick="resetTopics()">↺ 全部重抽 / Redraw All</button>
+      </div>
+      <hr class="div">
+      <div style="font-weight:700;margin-bottom:.8rem;">📖 Show vs. Tell 範例示範</div>
+      <div class="grid-2">
+        <div style="background:#fee;border:2px solid var(--accent);border-radius:6px;padding:1rem;">
+          <div class="callout-label" style="color:var(--accent);">❌ Tell — 說明</div>
+          <div class="bili" style="margin-top:.5rem;"><span class="zh">「便利商店很方便。」</span><span class="en">"The convenience store is so convenient."</span></div>
+        </div>
+        <div style="background:#f0fff5;border:2px solid var(--accent3);border-radius:6px;padding:1rem;">
+          <div class="callout-label" style="color:var(--accent3);">✅ Show — 展示</div>
+          <div class="bili" style="margin-top:.5rem;"><span class="zh">「走出門不到兩百步，就能買到熱騰騰的包子跟繳掉罰單。」</span><span class="en">"Less than two hundred steps from your door: steaming buns, and a place to pay your fine."</span></div>
+        </div>
+      </div>
+      <div class="grid-2" style="margin-top:.8rem;">
+        <div style="background:#fee;border:2px solid var(--accent);border-radius:6px;padding:1rem;">
+          <div class="callout-label" style="color:var(--accent);">❌ Tell — 說明</div>
+          <div class="bili" style="margin-top:.5rem;"><span class="zh">「考試讓我壓力很大。」</span><span class="en">"Exams make me really stressed."</span></div>
+        </div>
+        <div style="background:#f0fff5;border:2px solid var(--accent3);border-radius:6px;padding:1rem;">
+          <div class="callout-label" style="color:var(--accent3);">✅ Show — 展示</div>
+          <div class="bili" style="margin-top:.5rem;"><span class="zh">「凌晨三點，盯著天花板，手機靜音，但忍不住一直解鎖又鎖回去。」</span><span class="en">"3 a.m. Staring at the ceiling. Phone on silent — but I keep unlocking it and locking it again."</span></div>
+        </div>
+      </div>
+      <hr class="div">
+      <div style="font-weight:700;margin-bottom:.8rem;">🎮 練習卡 Practice Cards <span style="font-family:'Space Mono',monospace;font-size:.62rem;color:var(--muted);font-weight:400;">（點擊換題 / Click to change）</span></div>
+      <div id="sensoryGame"></div>
+      <button class="btn dark" style="margin-top:.8rem;" onclick="initSensoryGame()">↺ 換題目 Next Example</button>
+    </div>
+  </div>
+
+  <!-- ACT 4 -->
+  <div class="activity-card">
+    <div class="card-header open" onclick="toggleCard(this)">
+      <span class="act-num">ACT 4</span>
+      <h3>📱 手機搜圖：意象接龍<span class="en-title">Phone Image Hunt: Visual Association</span></h3>
+      <span class="card-time">10 min</span><span class="chevron">▼</span>
+    </div>
+    <div class="card-body open">
+      <div class="tbox">
+        <div class="tb-label">🎙 Teacher Instruction 教師指令</div>
+        <div class="zh">點擊下方抽出情緒關鍵字，投影給全班看。各組限時 2 分鐘，用手機找一張「<strong>沒有人的照片</strong>」來代表這個情緒。時間到，各組同時高舉手機展示。</div>
+        <div class="en">Click below to draw an emotion keyword and display it for the class. Each group has 2 minutes to find a photo with <strong>no people</strong> that represents the emotion. When time is up, all groups hold up their phones.</div>
+      </div>
+      <div class="sbox">
+        <div class="sb-label">📋 你的任務 Your Task</div>
+        <div class="bili">
+          <span class="zh">用手機找一張「<strong>沒有人</strong>」的照片來代表這個情緒。準備好解釋你為什麼選這張圖。</span>
+          <span class="en">Find a photo with <strong>NO people</strong> that represents the emotion. Be ready to explain your choice.</span>
+        </div>
+      </div>
+      <div style="text-align:center;margin:1.5rem 0;">
+        <div style="font-family:'Space Mono',monospace;font-size:.65rem;color:var(--muted);margin-bottom:.6rem;">老師點擊抽取 / Teacher clicks to draw</div>
+        <div id="emotionDisplay" style="font-size:2.2rem;font-weight:900;background:var(--ink);color:var(--paper);padding:1.2rem 2rem;border-radius:8px;display:inline-block;min-width:220px;cursor:pointer;line-height:1.5;text-align:center;" onclick="drawEmotion()">
+          點擊抽取<br><span style="font-size:.45em;font-weight:400;color:#aaa;">Click to draw</span>
+        </div>
+        <div style="margin-top:1rem;">
+          <button class="btn primary" onclick="startGroupTimer2min()">▶ 計時 2 分鐘 / Start 2-min Timer</button>
+          <button class="btn" onclick="resetGroupTimer()">↺ 重置 Reset</button>
+        </div>
+        <div id="groupTimerDisplay" style="font-family:'Space Mono',monospace;font-size:2rem;font-weight:700;margin-top:.5rem;color:var(--accent);min-height:2.5rem;"></div>
+      </div>
+      <div class="callout green">
+        <div class="callout-label">💬 老師點評示範 Teacher Commentary Example</div>
+        <div class="bili"><span class="zh">「這張<strong>緊繃的琴弦</strong>照片比任何文字都有力——一眼就感受到壓力。這就是 Show, Don't Tell！」</span><span class="en">"This photo of a <strong>taut guitar string</strong> is more powerful than any words — you feel the tension instantly. That's Show, Don't Tell!"</span></div>
+      </div>
+      <div style="background:#f8f4ee;border:2px dashed #ccc;border-radius:8px;padding:1.2rem;text-align:center;margin-top:1rem;">
+        <div style="font-family:'Space Mono',monospace;font-size:.7rem;color:var(--muted);">📸 各組展示區 / Group Display Zone — 各組同時高舉手機 / All groups hold up phones simultaneously</div>
+        <div style="font-size:1.8rem;letter-spacing:.2rem;margin:.6rem 0;">📱 📱 📱 📱 📱 📱 📱</div>
+        <div style="font-size:.82rem;color:var(--muted);">老師逐一點評 / Teacher gives feedback on each group</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ====== PHASE 3 ====== -->
+<section class="phase" id="phase-2">
+  <div class="phase-header">
+    <div class="phase-number">03</div>
+    <div>
+      <div class="phase-title">口語節奏與「空拍」技巧<span class="en">Spoken Rhythm &amp; The "Pause" Technique</span></div>
+      <div class="phase-meta">⏱ 25 min · 2 activities 個活動</div>
+    </div>
+  </div>
+
+  <!-- ACT 5 -->
+  <div class="activity-card">
+    <div class="card-header open" onclick="toggleCard(this)">
+      <span class="act-num">ACT 5</span>
+      <h3>🥁 三拍子說話法<span class="en-title">The 3-Beat Speaking Method</span></h3>
+      <span class="card-time">15 min</span><span class="chevron">▼</span>
+    </div>
+    <div class="card-body open">
+      <div class="tbox">
+        <div class="tb-label">🎙 Teacher Instruction 教師指令</div>
+        <div class="zh">配合下方視覺化色塊，講解三段節奏（讓學生點擊各色塊自己閱讀）。接著帶全班對著同一張圖，用節拍器一起練習「1, 2, 3 吸氣 開口說」。</div>
+        <div class="en">Use the visual rhythm strip below to explain the 3-part structure — have students click each bar. Then lead the whole class in the beat practice: "1, 2, 3 — breathe — speak!" Everyone faces the same image.</div>
+      </div>
+      <div style="margin:1.5rem 0;">
+        <div style="font-weight:700;margin-bottom:.5rem;">📊 20 秒節奏分配圖 / 20-Second Rhythm Map <span style="font-family:'Space Mono',monospace;font-size:.62rem;color:var(--muted);font-weight:400;">← 點擊色塊 / Click each bar</span></div>
+        <div class="rhythm-strip" id="rhythmStrip"></div>
+        <div id="rhythmInfo" style="background:var(--ink);color:var(--paper);padding:1rem;border-radius:6px;font-size:.85rem;line-height:1.9;margin-top:.5rem;min-height:100px;"></div>
+      </div>
+      <table class="rt">
+        <tr><th>時段 / Time</th><th>名稱 / Name</th><th>做什麼 / What To Do</th></tr>
+        <tr>
+          <td style="font-family:'Space Mono',monospace;color:var(--accent3);">第 1–3 秒<span class="ec">Sec 1–3</span></td>
+          <td><strong>留白</strong><span class="ec">Pause</span></td>
+          <td>換頁後先看觀眾，停頓，讓觀眾看完圖再說<span class="ec">After slide change, look at the audience. Pause. Let them take in the image first.</span></td>
+        </tr>
+        <tr>
+          <td style="font-family:'Space Mono',monospace;color:var(--accent);">第 4–15 秒<span class="ec">Sec 4–15</span></td>
+          <td><strong>重擊</strong><span class="ec">Strike</span></td>
+          <td>用一句話說出圖片背後的故事<span class="ec">Deliver one powerful sentence — the story behind the image.</span></td>
+        </tr>
+        <tr>
+          <td style="font-family:'Space Mono',monospace;color:var(--accent2);">第 16–20 秒<span class="ec">Sec 16–20</span></td>
+          <td><strong>轉場</strong><span class="ec">Bridge</span></td>
+          <td>自然收尾，預告下一頁<span class="ec">Wrap up naturally and hint at what's coming next.</span></td>
+        </tr>
+      </table>
+      <div style="background:#f0fff5;border:2px solid var(--accent3);border-radius:8px;padding:1.5rem;margin:1.2rem 0;">
+        <div style="font-weight:700;margin-bottom:1rem;">🎯 集體練習 Class Practice: 數拍子開口說 / Count the Beats, Then Speak!</div>
+        <div class="sbox" style="background:#fff;border-color:#ccc;margin-bottom:1rem;">
+          <div class="sb-label">📋 全班一起 All Together</div>
+          <div class="bili"><span class="zh">跟著節拍數「1, 2, 3」，吸一口氣，然後開口描述老師放的圖片！</span><span class="en">Count along — "1, 2, 3" — take a breath — then speak! Describe the image your teacher shows.</span></div>
+        </div>
+        <div style="text-align:center;">
+          <div id="beatDisplay">準備好了嗎？<br><span style="font-size:.5em;font-weight:400;color:#aaa;">Are you ready?</span></div><br>
+          <button class="btn primary" onclick="startBeatPractice()">▶ 開始 Start</button>
+          <button class="btn" onclick="stopBeatPractice()">■ 停止 Stop</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ACT 6 -->
+  <div class="activity-card">
+    <div class="card-header open" onclick="toggleCard(this)">
+      <span class="act-num">ACT 6</span>
+      <h3>🔊 重音放大鏡<span class="en-title">The Stress Magnifier</span></h3>
+      <span class="card-time">10 min</span><span class="chevron">▼</span>
+    </div>
+    <div class="card-body open">
+      <div class="tbox">
+        <div class="tb-label">🎙 Teacher Instruction 教師指令</div>
+        <div class="zh">將下方台詞投影給全班。<strong>第一次</strong>：平音齊讀。<strong>第二次</strong>：把標色的形容詞和動詞音量加倍、語速放慢。請學生互評感受到的差異。</div>
+        <div class="en"><strong>Round 1:</strong> Read together in a flat, even tone. <strong>Round 2:</strong> Double the volume on highlighted adjectives and verbs, and slow down. Ask students to notice the difference.</div>
+      </div>
+      <div class="sbox">
+        <div class="sb-label">📋 你的任務 Your Task</div>
+        <div class="bili"><span class="zh">第一次平讀，第二次把標色的詞說得更<strong>大聲、更慢</strong>，感受聲音的力量！</span><span class="en">First, read it flat. Second time, make highlighted words <strong>louder and slower</strong>. Feel the power!</span></div>
+      </div>
+      <div style="margin:1.5rem 0;">
+        <div style="display:flex;gap:.5rem;margin-bottom:.8rem;flex-wrap:wrap;align-items:center;">
+          <span class="tag tag-red">■ 形容詞 Adjective → 放大聲 Louder</span>
+          <span class="tag tag-green">■ 動詞 Verb → 放慢說 Slower</span>
+          <span style="font-family:'Space Mono',monospace;font-size:.6rem;color:var(--muted);">（點擊單字切換強調 / Click a word to toggle）</span>
+        </div>
+        <div class="text-practice" id="textPractice"></div>
+        <div style="display:flex;gap:.5rem;margin-top:.8rem;flex-wrap:wrap;">
+          <button class="btn primary" onclick="toggleEmphasis()">✨ 標示重點詞 Highlight Key Words</button>
+          <button class="btn dark" onclick="resetEmphasis()">↺ 清除 Clear</button>
+          <button class="btn dark" onclick="switchScript()">↻ 換台詞 Change Script</button>
+        </div>
+      </div>
+      <div class="callout">
+        <div class="callout-label">🔑 技巧提示 Pro Tip</div>
+        <div class="bili"><span class="zh">重音不只是「大聲」——是在關鍵詞前<strong>微微停頓</strong>，然後加重、放慢。觀眾的耳朵會自動抓住那個詞。</span><span class="en">Stress isn't just volume — it's a <strong>tiny pause</strong> before the key word, then heavier, slower delivery. The audience's ears will lock onto it automatically.</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ====== PHASE 4 ====== -->
+<section class="phase" id="phase-3">
+  <div class="phase-header">
+    <div class="phase-number">04</div>
+    <div>
+      <div class="phase-title">3-Slide 閃電發表（壓力測試）<span class="en">3-Slide Lightning Talk — Pressure Test</span></div>
+      <div class="phase-meta">⏱ 35 min · 2 activities 個活動</div>
+    </div>
+  </div>
+
+  <!-- ACT 7 -->
+  <div class="activity-card">
+    <div class="card-header open" onclick="toggleCard(this)">
+      <span class="act-num">ACT 7</span>
+      <h3>⚡ 60 秒極速組裝<span class="en-title">60-Second Speed Build</span></h3>
+      <span class="card-time">15 min</span><span class="chevron">▼</span>
+    </div>
+    <div class="card-body open">
+      <div class="cbanner" style="background:var(--ink);font-size:.95rem;text-align:center;">
+        🎯 主題：「高中生活最 ㄎㄧㄤ 的一刻」<br>
+        <span class="en">Topic: "The Wildest Moment of My High School Life"</span>
+      </div>
+      <div class="tbox" style="margin-top:1rem;">
+        <div class="tb-label">🎙 Teacher Instruction 教師指令</div>
+        <div class="zh">給學生 3 分鐘選 3 張手機照片，再給 1 分鐘在紙上各寫一個關鍵字（不能寫稿）。然後組內兩兩計時互講，使用下方計時器自動換頁。</div>
+        <div class="en">Give students 3 minutes to pick 3 phone photos, then 1 minute to write one keyword per photo — no full scripts allowed. Use the timer below for paired practice — it auto-advances every 20 seconds.</div>
+      </div>
+      <ul class="steps" style="margin-top:1.2rem;">
+        <li><div class="step-icon">1</div><div class="step-text">手機找 3 張代表那個瞬間的照片（限時 3 分鐘）<span class="en">Find 3 photos on your phone that capture your wildest moment. (3 minutes)</span></div></li>
+        <li><div class="step-icon">2</div><div class="step-text">不准寫稿！只准在紙上為每張圖寫 <strong>1 個關鍵字</strong><span class="en">No full script! Write only <strong>1 keyword</strong> per photo on paper.</span></div></li>
+        <li><div class="step-icon">3</div><div class="step-text">組內兩兩互講，計時 60 秒，每 20 秒自動換圖<span class="en">Partner up and tell your story in 60 seconds — the timer auto-advances every 20 seconds.</span></div></li>
+      </ul>
+      <div style="background:var(--ink);border-radius:8px;padding:1.5rem;margin:1.5rem 0;text-align:center;color:var(--paper);">
+        <div style="font-family:'Space Mono',monospace;font-size:.65rem;letter-spacing:.1em;color:#aaa;margin-bottom:.5rem;">組內練習計時器 / Pair Practice Timer</div>
+        <div id="pairTimer" style="font-family:'Space Mono',monospace;font-size:5rem;font-weight:700;color:var(--accent2);line-height:1;">60</div>
+        <div id="pairSlideLabel" style="font-family:'Space Mono',monospace;font-size:.82rem;color:var(--accent);margin:.3rem 0 1rem;letter-spacing:.1em;">SLIDE 1</div>
+        <div class="pk-slide-dots" id="pairDots"><div class="pk-dot active"></div><div class="pk-dot"></div><div class="pk-dot"></div></div>
+        <div style="margin-top:1.2rem;">
+          <button class="btn primary" onclick="startPairTimer()">▶ 開始兩兩互講 Start Pair Practice</button>
+          <button class="btn" onclick="resetPairTimer()">↺ 重置 Reset</button>
+        </div>
+      </div>
+      <div style="margin:1rem 0;">
+        <div style="font-weight:700;margin-bottom:.8rem;">📝 關鍵字速記卡 / Keyword Card <span style="font-family:'Space Mono',monospace;font-size:.62rem;color:var(--muted);font-weight:400;">（在此輸入或用紙筆 / Type here or write on paper）</span></div>
+        <div class="grid-3">
+          <div style="border:2px solid var(--ink);border-radius:6px;padding:1rem;text-align:center;background:#fff;"><div style="font-family:'Space Mono',monospace;font-size:.62rem;color:var(--muted);">SLIDE 1</div><input class="kw-input" placeholder="關鍵字① / Keyword 1"></div>
+          <div style="border:2px solid var(--ink);border-radius:6px;padding:1rem;text-align:center;background:#fff;"><div style="font-family:'Space Mono',monospace;font-size:.62rem;color:var(--muted);">SLIDE 2</div><input class="kw-input" placeholder="關鍵字② / Keyword 2"></div>
+          <div style="border:2px solid var(--ink);border-radius:6px;padding:1rem;text-align:center;background:#fff;"><div style="font-family:'Space Mono',monospace;font-size:.62rem;color:var(--muted);">SLIDE 3</div><input class="kw-input" placeholder="關鍵字③ / Keyword 3"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ACT 8 -->
+  <div class="activity-card">
+    <div class="card-header open" onclick="toggleCard(this)">
+      <span class="act-num">ACT 8</span>
+      <h3>🏆 PK 台：誰是節奏王<span class="en-title">PK Stage: Who Is the Rhythm Master?</span></h3>
+      <span class="card-time">15 min + 5' feedback 回饋</span><span class="chevron">▼</span>
+    </div>
+    <div class="card-body open">
+      <div class="tbox">
+        <div class="tb-label">🎙 Teacher Instruction 教師指令</div>
+        <div class="zh">每組派一名代表上台。啟動下方 PK 計時器（自動每 20 秒換頁）。台下同學觀察並評分：有沒有留白？有沒有說出一句有力的話？發表完畢後，老師點擊加分。</div>
+        <div class="en">One representative per group comes up. Start the PK timer below — it auto-advances every 20 seconds. Audience observes and mentally scores: Did they pause? Did they deliver one powerful sentence? Click to add points after each turn.</div>
+      </div>
+      <div class="sbox">
+        <div class="sb-label">👀 觀眾任務 Audience Task</div>
+        <div class="bili"><span class="zh">觀察台上的同學，每換一頁就在心中評分：有沒有「停頓」？有沒有說出「一句有畫面感的話」？</span><span class="en">Watch the presenter. After each slide change, silently judge: Did they pause? Did they say one vivid, visual sentence?</span></div>
+      </div>
+      <div class="pk-stage">
+        <div style="font-family:'Space Mono',monospace;font-size:.65rem;letter-spacing:.15em;color:#aaa;margin-bottom:.5rem;">PK 台計時器 / PK Stage Timer</div>
+        <div class="pk-slide-num" id="pkSlideNum">SLIDE 1</div>
+        <div class="pk-timer" id="pkTimer">20</div>
+        <div style="height:6px;background:#333;border-radius:3px;overflow:hidden;width:70%;margin:0 auto;">
+          <div id="pkProgressFill" style="height:100%;background:linear-gradient(90deg,#f5a623,#e63329);width:100%;transition:width 1s linear;border-radius:3px;"></div>
+        </div>
+        <div class="pk-slide-dots" id="pkDots"><div class="pk-dot active"></div><div class="pk-dot"></div><div class="pk-dot"></div></div>
+        <div style="margin-top:1.5rem;">
+          <button class="btn primary" onclick="startPK()">▶ 開始 PK Start</button>
+          <button class="btn" onclick="resetPK()">↺ 重置 Reset</button>
+        </div>
+        <div id="pkStatus" style="font-family:'Space Mono',monospace;font-size:.7rem;color:#aaa;margin-top:.8rem;min-height:1.4em;line-height:1.7;"></div>
+      </div>
+      <div style="margin:1.5rem 0;">
+        <div style="font-weight:700;margin-bottom:1rem;">📊 節奏王評分板 / Rhythm Master Scoreboard</div>
+        <div id="scoreBoard"></div>
+        <button class="btn dark" style="margin-top:.8rem;" onclick="addScore()">+ 加分 Add Points</button>
+        <button class="btn dark" onclick="resetScores()">↺ 重置 Reset Scores</button>
+      </div>
+      <div class="callout green">
+        <div class="callout-label">🏆 評分標準 Scoring Criteria</div>
+        <ul style="list-style:none;line-height:2.1;font-size:.88rem;">
+          <li><strong>+2 分</strong> 換頁時沒有慌亂 / Smooth slide transition — no panicking</li>
+          <li><strong>+2 分</strong> 有使用「留白」停頓 / Used the pause technique correctly</li>
+          <li><strong>+3 分</strong> 說出最有畫面感的句子 / Delivered the most vivid, visual sentence</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+</main>
+
+<div class="progress-tracker">Phase 階段 <span id="progressNum">1</span>/4</div>
+
+<script>
+// PHASE SWITCH
+function switchPhase(idx){
+  document.querySelectorAll('.phase').forEach((p,i)=>p.classList.toggle('active',i===idx));
+  document.querySelectorAll('.phase-pill').forEach((p,i)=>p.classList.toggle('active',i===idx));
+  document.getElementById('progressNum').textContent=idx+1;
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+// CARD TOGGLE
+function toggleCard(h){h.classList.toggle('open');h.nextElementSibling.classList.toggle('open');}
+
+// BAD SLIDE DEMO
+const badSlides=[
+  `Slide 1 / 第一頁：簡報的重要性 The Importance of Presentations\n• 簡報是現代職場必備技能 Presentations are essential in the modern workplace\n• 有效溝通可提升工作效率 Effective communication improves efficiency\n• 研究顯示 72% 的決策受簡報品質影響 Studies show 72% of decisions are influenced by presentation quality\n• 視覺設計與口語表達同等重要 Visual design and verbal delivery are equally important`,
+  `Slide 2 / 第二頁：常見錯誤分析 Common Mistakes Analysis\n• 文字過多導致讀者分心 Too much text distracts the audience\n• 字體選擇不當影響閱讀 Poor font choices affect readability\n• 色彩搭配缺乏一致性 Inconsistent color usage\n• 第三行 Line 3：轉場效果過於花俏 Over-animated transitions are distracting`,
+  `Slide 3 / 第三頁：改進策略建議 Improvement Strategies\n• 每頁不超過三個重點 No more than 3 points per slide\n• 多使用圖像取代文字 Use images instead of text\n• 保持視覺統一風格 Keep a consistent visual style\n• 練習口語節奏和停頓技巧 Practice spoken rhythm and the pause technique`
+];
+let slideIdx=0,slideInterval=null;
+function startBadDemo(){
+  if(slideInterval)return;
+  slideIdx=0;showSlide();
+  slideInterval=setInterval(()=>{
+    slideIdx++;
+    if(slideIdx>=badSlides.length){
+      clearInterval(slideInterval);slideInterval=null;
+      document.getElementById('slideProgressFill').style.width='0%';
+      document.getElementById('slideQuestion').style.display='block';
+      document.getElementById('slideContent').innerHTML='（示範結束 Demo ended）<br>你還記得第 2 張第 3 行寫什麼嗎？<br><em style="font-size:.82em;color:#aaa;">Do you remember line 3 of slide 2?</em>';
+      return;
+    }
+    showSlide();
+  },20000);
+}
+function showSlide(){
+  const f=document.getElementById('slideProgressFill');
+  document.getElementById('slideContent').innerHTML=badSlides[slideIdx].replace(/\n/g,'<br>');
+  document.getElementById('slideQuestion').style.display='none';
+  f.style.transition='none';f.style.width='100%';
+  requestAnimationFrame(()=>{f.style.transition='width 20s linear';f.style.width='0%';});
+}
+
+// TIMER
+let timerInterval=null,timerVal=20;
+function startTimer(){
+  if(timerInterval)return;
+  timerVal=20;
+  timerInterval=setInterval(()=>{
+    timerVal--;
+    document.getElementById('timerDisplay').textContent=timerVal;
+    document.getElementById('timerBarFill').style.width=(timerVal/20*100)+'%';
+    if(timerVal<=0){clearInterval(timerInterval);timerInterval=null;document.getElementById('timerDisplay').textContent='✓';document.getElementById('timerInstruction').textContent="⏰ 時間到！Time's up! 請舉手 Raise your hand!";}
+  },1000);
+}
+function resetTimer(){clearInterval(timerInterval);timerInterval=null;timerVal=20;document.getElementById('timerDisplay').textContent='20';document.getElementById('timerBarFill').style.width='100%';document.getElementById('timerInstruction').textContent='老師點擊開始 / Teacher clicks to start';}
+
+// HAND
+const handMessages={
+  5:['太快了！5 秒只有約 20 個中文字，還沒說完一個想法。\nToo fast! 5 seconds is only ~10 words — not even one complete thought.','red'],
+  10:['差了一半！再多等一倍的時間。\nHalfway there! Wait twice as long next time.','yellow'],
+  15:['快到了！還差 5 秒，繼續練習。\nAlmost! Just 5 more seconds. Keep practising!','yellow'],
+  20:['🎉 完美！你的時間感非常精準！\nPerfect! Your sense of timing is spot-on!','green'],
+  25:['超時了！20 秒已過，投影片已自動換頁。\nOver time! The slide already auto-advanced.','red'],
+};
+function raiseHand(el,sec){
+  document.querySelectorAll('.hand-icon').forEach(h=>h.classList.remove('raised'));
+  el.querySelector('.hand-icon').classList.add('raised');
+  const [msg]=handMessages[sec];
+  document.getElementById('handResult').innerHTML=msg.replace('\n','<br>');
+}
+
+// TOPICS
+const topics=[
+  {zh:'便利商店很方便',en:'Convenience stores are so convenient'},
+  {zh:'珍珠奶茶很好喝',en:'Bubble tea tastes amazing'},
+  {zh:'這間教室很悶熱',en:'This classroom is stuffy and hot'},
+  {zh:'考試很緊張',en:'Exams are nerve-wracking'},
+  {zh:'同學很搞笑',en:'My classmates are hilarious'},
+  {zh:'放學很開心',en:'After school feels so free'},
+  {zh:'上課很無聊',en:'This class is so boring'},
+  {zh:'打球很過癮',en:'Playing basketball is exhilarating'},
+  {zh:'早餐很美味',en:'Breakfast is delicious'},
+  {zh:'圖書館很安靜',en:'The library is so quiet'},
+];
+let usedTopics=[];
+function drawTopic(el,groupIdx){
+  const avail=topics.filter(t=>!usedTopics.find(u=>u===t.zh));
+  if(!avail.length)usedTopics=[];
+  const t=avail.length?avail[Math.floor(Math.random()*avail.length)]:topics[groupIdx%topics.length];
+  usedTopics.push(t.zh);
+  el.querySelector('.topic-text').textContent=t.zh;
+  el.querySelector('.topic-en').textContent=t.en;
+  el.querySelector('.topic-hint').textContent='🚫 禁忌詞！Banned word!';
+  el.style.background='#fff8ee';
+}
+function resetTopics(){
+  usedTopics=[];
+  const labels=['一','二','三','四','五','六','七'];
+  document.querySelectorAll('#topicGrid .topic-card').forEach((c,i)=>{
+    c.querySelector('.topic-text').textContent='？';
+    c.querySelector('.topic-en').textContent=`Group ${i+1} · 第${labels[i]}組`;
+    c.querySelector('.topic-hint').textContent='點擊抽取 / Click to draw';
+    c.style.background='';
+  });
+}
+
+// SENSORY
+const sensoryPairs=[
+  {topicZh:'壓力',topicEn:'Stress',tellZh:'壓力很大',tellEn:'"I\'m so stressed."',showZh:'凌晨三點，盯著天花板，手機靜音，但忍不住一直解鎖又鎖回去。',showEn:'"3 a.m. Staring at the ceiling. Phone on silent — but I keep unlocking it and locking it again."'},
+  {topicZh:'快樂',topicEn:'Joy',tellZh:'非常快樂',tellEn:'"I\'m so happy."',showZh:'笑到肚子痛，淚水順著臉頰流，卻完全不想停。',showEn:'"Laughing until my stomach hurts, tears rolling down my face — and I absolutely don\'t want to stop."'},
+  {topicZh:'孤獨',topicEn:'Loneliness',tellZh:'感到很孤獨',tellEn:'"I feel so lonely."',showZh:'滑了一百次首頁，沒有新訊息，放下手機又拿起來。',showEn:'"Scrolled through the feed a hundred times. No new messages. I put the phone down. I pick it up again."'},
+  {topicZh:'興奮',topicEn:'Excitement',tellZh:'超級興奮',tellEn:'"I\'m super excited."',showZh:'腳跟不停抖、嘴角壓不住，反覆看時間，卻覺得鐘走得更慢。',showEn:'"My leg won\'t stop bouncing. I can\'t wipe the grin off my face. I keep checking the time — it\'s barely moved."'},
+];
+let sensoryIdx=0;
+function initSensoryGame(){
+  sensoryIdx=(sensoryIdx+1)%sensoryPairs.length;
+  const p=sensoryPairs[sensoryIdx];
+  document.getElementById('sensoryGame').innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:.8rem;">
+      <div style="background:#fee;border:2px solid var(--accent);border-radius:6px;padding:1rem;">
+        <div class="callout-label" style="color:var(--accent);">❌ Tell — 說明</div>
+        <div style="margin-top:.4rem;font-weight:700;font-size:.93rem;">${p.tellZh}</div>
+        <div style="font-style:italic;font-size:.78rem;color:var(--muted);margin-top:.2rem;">${p.tellEn}</div>
+      </div>
+      <div style="background:#f0fff5;border:2px solid var(--accent3);border-radius:6px;padding:1rem;">
+        <div class="callout-label" style="color:var(--accent3);">✅ Show — 展示</div>
+        <div style="font-size:.88rem;line-height:1.75;margin-top:.4rem;">${p.showZh}</div>
+        <div style="font-style:italic;font-size:.78rem;color:var(--muted);line-height:1.65;margin-top:.3rem;">${p.showEn}</div>
+      </div>
+    </div>
+    <div style="text-align:center;font-family:'Space Mono',monospace;font-size:.62rem;color:var(--muted);margin-top:.5rem;">主題 Topic：${p.topicZh} / ${p.topicEn}</div>
+  `;
+}
+initSensoryGame();
+
+// EMOTION
+const emotions=[
+  {zh:'壓力 😤',en:'Stress'},{zh:'孤獨 😶',en:'Loneliness'},{zh:'興奮 🤩',en:'Excitement'},
+  {zh:'憤怒 😡',en:'Anger'},{zh:'期待 🌟',en:'Anticipation'},{zh:'懷念 💭',en:'Nostalgia'},
+  {zh:'自由 🌬️',en:'Freedom'},{zh:'疲憊 😴',en:'Exhaustion'},{zh:'喜悅 ✨',en:'Joy'},{zh:'迷茫 🌫️',en:'Confusion'}
+];
+let emoIdx=0;
+function drawEmotion(){
+  emoIdx=(emoIdx+1)%emotions.length;
+  const e=emotions[emoIdx];
+  document.getElementById('emotionDisplay').innerHTML=`${e.zh}<br><span style="font-size:.42em;font-weight:400;color:#aaa;">${e.en}</span>`;
+}
+let groupTimerInt=null,groupTimerVal=120;
+function startGroupTimer2min(){
+  if(groupTimerInt)return;groupTimerVal=120;
+  groupTimerInt=setInterval(()=>{
+    groupTimerVal--;
+    const m=Math.floor(groupTimerVal/60),s=groupTimerVal%60;
+    document.getElementById('groupTimerDisplay').textContent=`${m}:${s.toString().padStart(2,'0')}`;
+    if(groupTimerVal<=0){clearInterval(groupTimerInt);groupTimerInt=null;document.getElementById('groupTimerDisplay').textContent="⏰ 時間到！Time's up!";}
+  },1000);
+}
+function resetGroupTimer(){clearInterval(groupTimerInt);groupTimerInt=null;document.getElementById('groupTimerDisplay').textContent='';}
+
+// RHYTHM
+const rhythmData=[
+  {lZh:'留白',lEn:'Pause',color:'#1a6b3c',h:30,iZh:'第 1–3 秒｜換頁後先「看觀眾」，停頓 3 秒。讓觀眾的眼睛先看完圖，再開口說話。沉默比慌亂更有力量。',iEn:'Sec 1–3 | After the slide changes, look at the audience. Pause for 3 seconds. Let them take in the image first. Silence is more powerful than rushing.'},
+  {lZh:'重擊',lEn:'Strike',color:'#e63329',h:80,iZh:'第 4–15 秒｜用「一句有力的話」說出圖片背後的故事。不要列三個重點，只說最重要的那一個。這是 20 秒的靈魂。',iEn:'Sec 4–15 | Deliver one powerful sentence — the story behind the image. Don\'t list three points. Say the one thing that matters most. This is the soul of your 20 seconds.'},
+  {lZh:'轉場',lEn:'Bridge',color:'#f5a623',h:50,iZh:'第 16–20 秒｜自然收尾。可以用「所以...」或「這讓我想到...」橋接到下一頁。不要硬切，要順著流走。',iEn:'Sec 16–20 | Wrap up naturally. Use "So…" or "Which brings me to…" to bridge to the next slide. Don\'t hard-cut — flow into it.'},
+];
+function buildRhythmStrip(){
+  const strip=document.getElementById('rhythmStrip');
+  const info=document.getElementById('rhythmInfo');
+  strip.innerHTML='';
+  rhythmData.forEach((d,i)=>{
+    for(let j=0;j<(i===0?3:i===1?12:5);j++){
+      const b=document.createElement('div');
+      b.className='beat';b.style.background=d.color;b.style.height=d.h+'px';b.style.opacity='.7';
+      b.setAttribute('data-label',`${d.lZh}/${d.lEn} (${j+1}s)`);
+      b.addEventListener('click',()=>{
+        info.innerHTML=`<strong style="color:${d.color}">${d.lZh} / ${d.lEn}</strong><br>${d.iZh}<br><em style="font-size:.82em;color:#aaa;">${d.iEn}</em>`;
+        strip.querySelectorAll('.beat').forEach(x=>x.style.opacity='.3');b.style.opacity='1';
+      });
+      b.addEventListener('mouseenter',()=>{b.style.height=(d.h+10)+'px';});
+      b.addEventListener('mouseleave',()=>{b.style.height=d.h+'px';});
+      strip.appendChild(b);
+    }
+  });
+  info.innerHTML='<span style="color:#aaa;font-family:\'Space Mono\',monospace;font-size:.75rem;">← 點擊色塊查看說明 / Click a color block to learn more</span>';
+}
+buildRhythmStrip();
+
+// BEAT
+const beatSeq=[
+  {zh:'1',en:'1'},{zh:'2',en:'2'},{zh:'3',en:'3'},{zh:'（吸氣）',en:'(Breathe)'},
+  {zh:'開口說！',en:'Speak!'},{zh:'重擊—',en:'Strike—'},{zh:'重擊—',en:'Strike—'},
+  {zh:'重擊—',en:'Strike—'},{zh:'重擊—',en:'Strike—'},{zh:'重擊—',en:'Strike—'},
+  {zh:'收尾→',en:'Bridge→'},{zh:'收尾→',en:'Bridge→'},{zh:'換頁 ⚡',en:'Slide ⚡'},
+];
+let beatIdx2=-1,beatInt=null;
+function startBeatPractice(){
+  if(beatInt)return;beatIdx2=0;
+  const b=beatSeq[0];
+  document.getElementById('beatDisplay').innerHTML=`${b.zh}<br><span style="font-size:.5em;font-weight:400;color:#aaa;">${b.en}</span>`;
+  beatInt=setInterval(()=>{
+    beatIdx2=(beatIdx2+1)%beatSeq.length;
+    const b=beatSeq[beatIdx2];
+    document.getElementById('beatDisplay').innerHTML=`${b.zh}<br><span style="font-size:.5em;font-weight:400;color:#aaa;">${b.en}</span>`;
+    document.getElementById('beatDisplay').style.background=beatIdx2<3?'#1a6b3c':beatIdx2<9?'#e63329':'#f5a623';
+  },1500);
+}
+function stopBeatPractice(){clearInterval(beatInt);beatInt=null;document.getElementById('beatDisplay').innerHTML='準備好了嗎？<br><span style="font-size:.5em;font-weight:400;color:#aaa;">Are you ready?</span>';document.getElementById('beatDisplay').style.background='var(--ink)';}
+
+// SCRIPTS
+const scripts=[
+  [{word:'走出門',type:'verb'},{word:'不到',type:''},{word:'兩百步',type:'adj'},{word:'，就能',type:''},{word:'買到',type:'verb'},{word:'熱騰騰',type:'adj'},{word:'的包子',type:''},{word:'跟',type:''},{word:'繳掉',type:'verb'},{word:'罰單',type:''}],
+  [{word:'Less',type:''},{word:'than',type:''},{word:'two hundred steps',type:'adj'},{word:'from the door,',type:''},{word:'you can',type:''},{word:'buy',type:'verb'},{word:'a steaming',type:'adj'},{word:'bun',type:''},{word:'and',type:''},{word:'pay off',type:'verb'},{word:'a fine.',type:''}],
+  [{word:'凌晨三點',type:'adj'},{word:'，盯著',type:'verb'},{word:'天花板',type:''},{word:'，手機',type:''},{word:'靜音',type:'adj'},{word:'，但還是',type:''},{word:'忍不住',type:'verb'},{word:'一直',type:'adj'},{word:'看',type:'verb'}],
+  [{word:'3 a.m.',type:'adj'},{word:'Staring at',type:'verb'},{word:'the ceiling.',type:''},{word:'Phone',type:''},{word:'on silent',type:'adj'},{word:'—',type:''},{word:'but I keep',type:''},{word:'unlocking',type:'verb'},{word:'it',type:''},{word:'and',type:''},{word:'locking it',type:'verb'},{word:'again.',type:''}],
+];
+let scriptIdx=0,emphMode=false,emphState=[];
+function renderScript(){
+  const sc=scripts[scriptIdx];emphState=sc.map(()=>false);
+  document.getElementById('textPractice').innerHTML=sc.map((w,i)=>`<span class="word ${w.type}" data-idx="${i}" onclick="toggleWord(${i})">${w.word}&nbsp;</span>`).join('');
+}
+function toggleWord(i){emphState[i]=!emphState[i];document.querySelector(`.word[data-idx="${i}"]`).classList.toggle('emphasized',emphState[i]);}
+function toggleEmphasis(){emphMode=!emphMode;scripts[scriptIdx].forEach((w,i)=>{if(w.type){emphState[i]=emphMode;document.querySelector(`.word[data-idx="${i}"]`).classList.toggle('emphasized',emphMode);}});}
+function resetEmphasis(){emphState.fill(false);document.querySelectorAll('.word').forEach(w=>w.classList.remove('emphasized'));emphMode=false;}
+function switchScript(){scriptIdx=(scriptIdx+1)%scripts.length;renderScript();emphMode=false;}
+renderScript();
+
+// PAIR TIMER
+let pairTimerInt=null,pairVal=60,pairSlide=1;
+function startPairTimer(){
+  if(pairTimerInt)return;
+  pairTimerInt=setInterval(()=>{
+    pairVal--;
+    document.getElementById('pairTimer').textContent=pairVal;
+    if(pairVal%20===0&&pairVal>0){pairSlide++;document.getElementById('pairSlideLabel').textContent=`SLIDE ${pairSlide}`;updatePairDots(pairSlide-1);}
+    if(pairVal<=0){clearInterval(pairTimerInt);pairTimerInt=null;document.getElementById('pairTimer').textContent='✓';document.getElementById('pairSlideLabel').textContent='完成！Done!';updatePairDots(3);}
+  },1000);
+}
+function updatePairDots(a){document.querySelectorAll('#pairDots .pk-dot').forEach((d,i)=>{d.classList.remove('active','done');if(i<a)d.classList.add('done');else if(i===a)d.classList.add('active');});}
+function resetPairTimer(){clearInterval(pairTimerInt);pairTimerInt=null;pairVal=60;pairSlide=1;document.getElementById('pairTimer').textContent='60';document.getElementById('pairSlideLabel').textContent='SLIDE 1';updatePairDots(0);}
+
+// PK TIMER
+let pkInt=null,pkVal=20,pkSlide2=1;
+function startPK(){
+  if(pkInt)return;
+  pkInt=setInterval(()=>{
+    pkVal--;
+    document.getElementById('pkTimer').textContent=pkVal;
+    document.getElementById('pkProgressFill').style.width=(pkVal/20*100)+'%';
+    if(pkVal<=0){
+      pkSlide2++;
+      if(pkSlide2>3){clearInterval(pkInt);pkInt=null;document.getElementById('pkSlideNum').textContent='完成！Done!';document.getElementById('pkStatus').textContent='🎉 60 秒結束，發表完畢！/ Talk complete!';updatePKDots(3);return;}
+      pkVal=20;document.getElementById('pkSlideNum').textContent=`SLIDE ${pkSlide2}`;document.getElementById('pkStatus').textContent=`⚡ 換頁！Slide change! → Slide ${pkSlide2}`;updatePKDots(pkSlide2-1);
+      const f=document.getElementById('pkProgressFill');f.style.transition='none';f.style.width='100%';setTimeout(()=>{f.style.transition='width 1s linear';},50);
+    }
+  },1000);
+}
+function updatePKDots(a){document.querySelectorAll('#pkDots .pk-dot').forEach((d,i)=>{d.classList.remove('active','done');if(i<a)d.classList.add('done');else if(i===a)d.classList.add('active');});}
+function resetPK(){clearInterval(pkInt);pkInt=null;pkVal=20;pkSlide2=1;document.getElementById('pkTimer').textContent='20';document.getElementById('pkSlideNum').textContent='SLIDE 1';document.getElementById('pkStatus').textContent='';document.getElementById('pkProgressFill').style.width='100%';updatePKDots(0);}
+
+// SCORES
+const groups=[{zh:'第一組',en:'Group 1'},{zh:'第二組',en:'Group 2'},{zh:'第三組',en:'Group 3'},{zh:'第四組',en:'Group 4'},{zh:'第五組',en:'Group 5'},{zh:'第六組',en:'Group 6'},{zh:'第七組',en:'Group 7'}];
+let scores=[0,0,0,0,0,0,0];
+function renderScoreBoard(){
+  document.getElementById('scoreBoard').innerHTML=groups.map((g,i)=>`
+    <div class="score-row">
+      <span class="score-name">${g.zh}<br><span style="font-size:.8em;color:var(--muted);">${g.en}</span></span>
+      <div class="score-bar"><div class="score-fill" style="width:${Math.min(scores[i]/15*100,100)}%">${scores[i]>0?scores[i]:''}</div></div>
+      <span class="score-val">${scores[i]}</span>
+    </div>`).join('');
+}
+function addScore(){
+  const g=prompt('哪一組加分？Which group? (1–7)','1');
+  const p=prompt('加幾分？How many points? (2/3/5)','2');
+  const idx=parseInt(g)-1;
+  if(idx>=0&&idx<7){scores[idx]+=parseInt(p)||2;renderScoreBoard();}
+}
+function resetScores(){scores.fill(0);renderScoreBoard();}
+renderScoreBoard();
+</script>
+</body>
+</html>
